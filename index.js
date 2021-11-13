@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const ObjectId = require('mongodb').ObjectId;
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -24,15 +25,32 @@ async function run() {
         const database = client.db("DJI-Drone-BD");
         const drones_Collection = database.collection("drones");
 
-        app.get('/drones',async(req,res)=>{
-            const size=parseInt(req.query.size);
-            const page =req.query.page;
+        //load drones (GET API)
+        app.get("/drones", async (req, res) => {
+            const size = parseInt(req.query.size);
+            const page = req.query.page;
             const cursor = drones_Collection.find({});
-            const count= await cursor.count();
-            const drones = await cursor.skip(size*page).limit(size).toArray();
-            res.json({count,drones});
-        })
-        
+            const count = await cursor.count();
+
+            let drones;
+            if (size && page) {
+                drones = await cursor.skip(size * page).limit(size).toArray();
+            }
+            else {
+                drones = await cursor.toArray();
+            }
+
+            res.json({ count, drones });
+        });
+
+        //load single drone drone (GET API)
+        app.get("/drones/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const drone = await drones_Collection.findOne(query);
+            res.json(drone);
+        });
+
     } finally {
         //   await client.close();
     }
