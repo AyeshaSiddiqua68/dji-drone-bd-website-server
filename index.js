@@ -5,6 +5,7 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
+// https://secret-stream-74331.herokuapp.com
 
 app.use(cors());
 app.use(express.json())
@@ -22,6 +23,8 @@ async function run() {
         const database = client.db("DJI-Drone-BD");
         const drones_Collection = database.collection("drones");
         const cart_Collection = database.collection("cart");
+        const review_collection = database.collection("review");
+        const user_collection = database.collection("users");
 
 
         //load drones (GET API)
@@ -81,10 +84,63 @@ async function run() {
             const result = await cart_Collection.deleteMany(query);
             res.json(result);
 
-        })
+        });
 
+        //Orders (GET API)
+        app.get("/orders",async(req,res)=>{
+            const result = await cart_Collection.find({}).toArray();
+            res.json(result);
+        });
 
+     //order confirmation (PUT API)
+     app.put("/confirmation/:id",async(req,res)=>{
+      const id = req.params.id;
+      const query={_id:ObjectId(id)}
+      const drone = {
+        $set: {
+          status:"Confirm"
+        },
+      };
+      const result = await cart_Collection.updateOne(query, drone);
+      res.json(result);
+     });
 
+     //add a new product (POST API)
+    app.post("/addProduct", async (req, res) => {
+        const result = await drones_Collection.insertOne(req.body);
+        res.json(result);
+      });
+
+    // add a review (POST API)
+    app.post("/addReview", async (req, res) => {
+        const result = await review_collection.insertOne(req.body);
+        res.json(result);
+      });
+
+      // load all reviews(GET API)
+    app.get("/reviews", async (req, res) => {
+        const result = await review_collection.find({}).toArray();
+        res.json(result);
+      });
+
+      //user add post api
+    app.get("/admin/:email", async (req, res) => {
+        const email = req.params.email;
+        const result = await user_collection.findOne({ email: email });
+        res.json(result);
+      });
+
+       // add a new admin (POST API)
+    app.put("/addAdmin", async (req, res) => {
+        const email = req.body.email;
+        const result = await user_collection.updateOne(
+          { email },
+          {
+            $set: { role: "admin" },
+          }
+        );
+        res.json(result);
+      });
 
 
 
